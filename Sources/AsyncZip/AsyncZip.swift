@@ -1,12 +1,16 @@
 import Foundation
 
-// FB12383213: SwiftCompile crashes when using parameter packs
 func zip<FirstElement, SecondElement, each Element>(
     _ firstOperation: @Sendable @escaping () async throws -> FirstElement,
     _ secondOperation: @Sendable @escaping () async throws -> SecondElement,
     _ operation: repeat @Sendable @escaping () async throws -> (each Element)) async throws -> (FirstElement, SecondElement, repeat each Element)
 {
-    async let results = (firstOperation(), secondOperation(), repeat (each operation)())
+    async let firstOperation = try firstOperation()
+    async let secondOperation = try secondOperation()
     
-    return try await results
+    return try await (
+        firstOperation,
+        secondOperation,
+        repeat Task<each Element, Error>(operation: each operation).value
+    )
 }
